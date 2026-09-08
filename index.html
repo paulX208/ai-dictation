@@ -51,17 +51,16 @@
 
         // 1. INITIALIZE MEDIA & BLUETOOTH
         document.getElementById('initBtn').addEventListener('click', () => {
-            // Mobile browsers block audio unless the user clicks something first
+            // Chrome requires an active audio element to keep the Media Session API alive
             document.getElementById('silentAudio').play();
             
-            // Speak a silent utterance to wake up the TTS engine
             let wakeUp = new SpeechSynthesisUtterance("");
             window.speechSynthesis.speak(wakeUp);
 
-            setupBluetoothControls();
+            // This activates the in-ear detection hooks
+            setupBluetoothControls(); 
             
             document.getElementById('initBtn').innerText = "System Active";
-            document.getElementById('imageInput').disabled = false;
         });
 
         let advanceTimer;
@@ -80,17 +79,22 @@
         window.speechSynthesis.onvoiceschanged = loadClearVoice;
         loadClearVoice(); // Call immediately in case they are already loaded
 
-// 2. SETUP BLUETOOTH BUTTON HIJACKING
+// 2. SETUP BLUETOOTH IN-EAR DETECTION & TOUCH CONTROLS
         function setupBluetoothControls() {
             if ('mediaSession' in navigator) {
+                // Triggered when earbud is put BACK IN
                 navigator.mediaSession.setActionHandler('play', () => {
                     window.speechSynthesis.resume();
                 });
+                
+                // Triggered when earbud is TAKEN OUT
                 navigator.mediaSession.setActionHandler('pause', () => {
                     window.speechSynthesis.pause();
+                    clearTimeout(advanceTimer); // Freezes the auto-flow timer so you don't miss steps
                 });
+                
+                // Retaining the touch controls in case you need to skip forward/backward
                 navigator.mediaSession.setActionHandler('nexttrack', () => {
-                    // Double-tap RIGHT earbud: Skip to next chunk immediately
                     clearTimeout(advanceTimer);
                     if(currentIndex < answerChunks.length - 1) {
                         currentIndex++;
@@ -98,7 +102,6 @@
                     }
                 });
                 navigator.mediaSession.setActionHandler('previoustrack', () => {
-                    // Double-tap LEFT earbud: Rewind to previous chunk
                     clearTimeout(advanceTimer);
                     if(currentIndex > 0) {
                         currentIndex--;
