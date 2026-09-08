@@ -81,19 +81,25 @@
 
 // 2. SETUP BLUETOOTH IN-EAR DETECTION & TOUCH CONTROLS
         function setupBluetoothControls() {
+            const bgAudio = document.getElementById('silentAudio');
+
             if ('mediaSession' in navigator) {
-                // Triggered when earbud is put BACK IN
+                // Explicitly tell Android the media is actively playing
+                navigator.mediaSession.playbackState = 'playing';
+
                 navigator.mediaSession.setActionHandler('play', () => {
                     window.speechSynthesis.resume();
+                    bgAudio.play(); // Wake up the browser's media anchor
+                    navigator.mediaSession.playbackState = 'playing';
                 });
                 
-                // Triggered when earbud is TAKEN OUT
                 navigator.mediaSession.setActionHandler('pause', () => {
                     window.speechSynthesis.pause();
-                    clearTimeout(advanceTimer); // Freezes the auto-flow timer so you don't miss steps
+                    bgAudio.pause(); // Sync the dummy audio
+                    clearTimeout(advanceTimer); 
+                    navigator.mediaSession.playbackState = 'paused';
                 });
                 
-                // Retaining the touch controls in case you need to skip forward/backward
                 navigator.mediaSession.setActionHandler('nexttrack', () => {
                     clearTimeout(advanceTimer);
                     if(currentIndex < answerChunks.length - 1) {
@@ -109,6 +115,18 @@
                     }
                 });
             }
+
+            // BACKUP: If Android bypasses the API and directly pauses the audio element
+            bgAudio.addEventListener('pause', () => {
+                window.speechSynthesis.pause();
+                clearTimeout(advanceTimer);
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+            });
+
+            bgAudio.addEventListener('play', () => {
+                window.speechSynthesis.resume();
+                if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+            });
         }
 
 
@@ -140,16 +158,23 @@
 
         // On-Screen Button Logic
         document.getElementById('playBtn').addEventListener('click', () => {
+            const bgAudio = document.getElementById('silentAudio');
+            bgAudio.play(); // Keep the dummy audio in sync
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+            
             if (window.speechSynthesis.paused) {
                 window.speechSynthesis.resume();
             } else if (!window.speechSynthesis.speaking && answerChunks.length > 0) {
-                speakCurrentChunk(); // Wakes up the engine if Android killed the tab
+                speakCurrentChunk(); 
             }
         });
 
         document.getElementById('pauseBtn').addEventListener('click', () => {
+            document.getElementById('silentAudio').pause(); // Keep the dummy audio in sync
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+            
             window.speechSynthesis.pause();
-            clearTimeout(advanceTimer); // Stops it from auto-skipping while paused
+            clearTimeout(advanceTimer); 
         });
 
         document.getElementById('prevBtn').addEventListener('click', () => {
