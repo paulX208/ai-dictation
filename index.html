@@ -56,7 +56,9 @@
             document.getElementById('imageInput').disabled = false;
         });
 
-        // 2. SETUP BLUETOOTH BUTTON HIJACKING
+        let advanceTimer;
+
+// 2. SETUP BLUETOOTH BUTTON HIJACKING
         function setupBluetoothControls() {
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.setActionHandler('play', () => {
@@ -66,14 +68,16 @@
                     window.speechSynthesis.pause();
                 });
                 navigator.mediaSession.setActionHandler('nexttrack', () => {
-                    // Double click: Go to next chunk
+                    // Double-tap RIGHT earbud: Skip to next chunk immediately
+                    clearTimeout(advanceTimer);
                     if(currentIndex < answerChunks.length - 1) {
                         currentIndex++;
                         speakCurrentChunk();
                     }
                 });
                 navigator.mediaSession.setActionHandler('previoustrack', () => {
-                    // Triple click: Go to previous chunk
+                    // Double-tap LEFT earbud: Rewind to previous chunk
+                    clearTimeout(advanceTimer);
                     if(currentIndex > 0) {
                         currentIndex--;
                         speakCurrentChunk();
@@ -82,17 +86,28 @@
             }
         }
 
-        // 3. DICTATION ENGINE
+        // 3. DICTATION ENGINE WITH AUTO-FLOW
         function speakCurrentChunk() {
-            window.speechSynthesis.cancel(); // Stop whatever is currently speaking
+            window.speechSynthesis.cancel(); 
+            clearTimeout(advanceTimer); 
             
-            if (answerChunks.length === 0) return;
+            if (answerChunks.length === 0 || currentIndex >= answerChunks.length) return;
             
             let text = answerChunks[currentIndex];
             document.getElementById('outputDisplay').innerText = `Step ${currentIndex + 1}: ${text}`;
             
             let utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.75; // Slow, writable pace
+            utterance.rate = 0.75; 
+            
+            // Automatically flow to the next step after the current one finishes
+            utterance.onend = () => {
+                advanceTimer = setTimeout(() => {
+                    if (currentIndex < answerChunks.length - 1) {
+                        currentIndex++;
+                        speakCurrentChunk();
+                    }
+                }, 4000); // 4000ms = 4 seconds of silence to write. Change this number to adjust your writing time.
+            };
             
             window.speechSynthesis.speak(utterance);
         }
