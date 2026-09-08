@@ -17,6 +17,7 @@
     
     <!-- Step 1: User interaction to unlock audio on mobile -->
     <button id="initBtn">1. Initialize Earphones</button>
+    <button id="resetBtn" style="background: #dc3545; margin-bottom: 20px;">Reset API Key</button>
     
     <!-- Step 2: Camera/Gallery Input -->
     <input type="file" id="imageInput" accept="image/*" capture="environment" disabled>
@@ -34,6 +35,11 @@
         };
         let answerChunks = [];
         let currentIndex = 0;
+        document.getElementById('resetBtn').addEventListener('click', () => {
+    localStorage.removeItem('gemini_api_key');
+    alert("API Key cleared! The page will now reload.");
+    location.reload();
+});
 
         // 1. INITIALIZE MEDIA & BLUETOOTH
         document.getElementById('initBtn').addEventListener('click', () => {
@@ -126,7 +132,12 @@
                     });
 
                     const data = await response.json();
-                    let rawText = data.candidates[0].content.parts[0].text;
+
+if (data.error) {
+    throw new Error(data.error.message);
+}
+
+let rawText = data.candidates[0].content.parts[0].text;
                     
                     // Clean up potential markdown formatting from Gemini
                     rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
