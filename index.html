@@ -23,6 +23,14 @@
     <input type="file" id="imageInput" accept="image/*" multiple>
     
     <div id="outputDisplay">Waiting for image...</div>
+    <!-- On-Screen Media Player -->
+    <div id="mediaPlayer" style="display: none; text-align: center; margin-top: 20px; background: #222; padding: 15px; border-radius: 10px;">
+        <div style="font-size: 14px; color: #888; margin-bottom: 15px;">Manual Controls</div>
+        <button id="prevBtn" style="width: 22%; display: inline-block; background: #444; font-size: 20px;">⏮</button>
+        <button id="playBtn" style="width: 22%; display: inline-block; background: #28a745; font-size: 20px;">▶</button>
+        <button id="pauseBtn" style="width: 22%; display: inline-block; background: #ffc107; color: black; font-size: 20px;">⏸</button>
+        <button id="nextBtn" style="width: 22%; display: inline-block; background: #444; font-size: 20px;">⏭</button>
+    </div>
 
     <!-- The silent audio player that keeps Bluetooth controls active -->
     <audio id="silentAudio" src="silent.mp3" loop></audio>
@@ -86,7 +94,8 @@
             }
         }
 
-        // 3. DICTATION ENGINE WITH AUTO-FLOW
+
+// 3. DICTATION ENGINE WITH AUTO-FLOW & ON-SCREEN CONTROLS
         function speakCurrentChunk() {
             window.speechSynthesis.cancel(); 
             clearTimeout(advanceTimer); 
@@ -97,20 +106,50 @@
             document.getElementById('outputDisplay').innerText = `Step ${currentIndex + 1}: ${text}`;
             
             let utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.75; 
+            utterance.rate = 0.6; // SLOWED DOWN FOR WRITING
             
-            // Automatically flow to the next step after the current one finishes
             utterance.onend = () => {
                 advanceTimer = setTimeout(() => {
                     if (currentIndex < answerChunks.length - 1) {
                         currentIndex++;
                         speakCurrentChunk();
                     }
-                }, 4000); // 4000ms = 4 seconds of silence to write. Change this number to adjust your writing time.
+                }, 4000); // 4-second gap remains untouched
             };
             
             window.speechSynthesis.speak(utterance);
         }
+
+        // On-Screen Button Logic
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+            } else if (!window.speechSynthesis.speaking && answerChunks.length > 0) {
+                speakCurrentChunk(); // Wakes up the engine if Android killed the tab
+            }
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            window.speechSynthesis.pause();
+            clearTimeout(advanceTimer); // Stops it from auto-skipping while paused
+        });
+
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            clearTimeout(advanceTimer);
+            if(currentIndex > 0) {
+                currentIndex--;
+                speakCurrentChunk();
+            }
+        });
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            clearTimeout(advanceTimer);
+            if(currentIndex < answerChunks.length - 1) {
+                currentIndex++;
+                speakCurrentChunk();
+            }
+        });
+
 
         // 4. PROCESS IMAGE AND CALL GEMINI
         document.getElementById('imageInput').addEventListener('change', async (event) => {
@@ -172,6 +211,7 @@
                 answerChunks = JSON.parse(rawText);
                 currentIndex = 0;
                 speakCurrentChunk();
+                document.getElementById('mediaPlayer').style.display = 'block';
 
             } catch (error) {
                 document.getElementById('outputDisplay').innerText = "Error: " + error.message;
