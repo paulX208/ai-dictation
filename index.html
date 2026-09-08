@@ -65,6 +65,20 @@
         });
 
         let advanceTimer;
+        let clearVoice = null;
+
+        // Force mobile Chrome to load available voices and pick the clearest one
+        function loadClearVoice() {
+            let voices = window.speechSynthesis.getVoices();
+            // Prioritize clear Google voices or regional English
+            clearVoice = voices.find(v => v.name.includes("Google UK English"))
+                      || voices.find(v => v.name.includes("Google US English"))
+                      || voices.find(v => v.lang === "en-IN")
+                      || voices.find(v => v.lang.startsWith("en"))
+                      || voices[0];
+        }
+        window.speechSynthesis.onvoiceschanged = loadClearVoice;
+        loadClearVoice(); // Call immediately in case they are already loaded
 
 // 2. SETUP BLUETOOTH BUTTON HIJACKING
         function setupBluetoothControls() {
@@ -106,6 +120,7 @@
             document.getElementById('outputDisplay').innerText = `Step ${currentIndex + 1}: ${text}`;
             
             let utterance = new SpeechSynthesisUtterance(text);
+            if (clearVoice) utterance.voice = clearVoice;
             utterance.rate = 0.6; // SLOWED DOWN FOR WRITING
             
             utterance.onend = () => {
@@ -177,11 +192,18 @@
             // Wait for all images to process
             const imageParts = await Promise.all(readPromises);
 
-            const prompt = `You are a dictation assistant. Solve the problems in all the provided images in order. 
+            const prompt = `You are a dictation assistant for high school STEM. Solve the problems across all the provided question paper                 pages in order. 
             CRITICAL INSTRUCTIONS: 
             1. Output ONLY a raw JSON array of strings. No markdown, no formatting.
-            2. Break the solution into extremely short steps (under 15 words each).
-            3. Spell out ALL math phonetically (e.g., 'integral of x squared').`;
+            2. Break the solution into extremely short, logical steps (under 15 words each).
+            3. PHONETIC MATH DICTATION (CRITICAL): 
+               - Single variables/numbers: NEVER say just "a", "e", "0", "2", "x", "c". ALWAYS say "the variable a", "the constant e",  "the digit zero", "the number two", "the variable x", "capital C".
+               - Matrices & Determinants: Say "Matrix A, row 1 elements are...", "Determinant equals".
+               - Calculus: Say "d y by d x", "second derivative d two y by d x squared", "integral of... with respect to x", "limit as x approaches".
+               - Vectors & 3D: Say "vector a", "i cap plus j cap", "direction ratios are".
+               - Functions & Trig: Say "sine inverse of x", "square root of". 
+            Ensure the text is optimized for audio text-to-speech without any visual ambiguity so a student can transcribe it perfectly without looking.`;
+
 
             const requestBody = {
                 contents: [{
