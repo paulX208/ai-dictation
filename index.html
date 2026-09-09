@@ -231,27 +231,43 @@
             CRITICAL INSTRUCTIONS: 
             1. Output ONLY a raw JSON array of strings. No markdown, no formatting.
             2. Break the solution into extremely short, logical steps (under 15 words each).
-            3. STRICT CBSE NCERT FORMAT: Structure every solution exactly according to the Class 12 board step-marking scheme:
+            
+            3. QUESTION TYPE ROUTING (CRITICAL):
+               - IF MCQ (Multiple Choice): Output exactly ONE step containing ONLY the correct option letter and its final value. Skip all working.
+               - IF SUBJECTIVE: Provide a full, rigorous step-by-step solution.
+            
+            4. STRICT CBSE NCERT FORMAT: Structure every solution exactly according to the Class 12 board step-marking scheme:
                - First step: Always begin with "Given that..."
                - Second step: Explicitly dictate the formula, property, or theorem being used before substituting values.
                - Middle steps: Show step-by-step substitution and evaluation. Do not skip intermediate calculation steps.
                - Final step: Conclude with the final answer and units, or explicitly state "hence proved".
-            4. PHONETIC MATH DICTATION (CRITICAL): 
+               
+            5. CHAPTER-SPECIFIC NON-SKIP RULES:
+               - Ch 1: State definitions for reflexivity, symmetry, transitivity, one-one, or onto before testing.
+               - Ch 2: State principal value branch and domain.
+               - Ch 3: Evaluate LHL, RHL, and f(a) in separate steps.
+               - Ch 4: State "taking log on both sides". Do not skip chain rule expansions.
+               - Ch 5: State every row/column operation. State cofactor matrix before finding adjoint.
+               - Ch 6 & 7: Dictate formula for shortest distance, dot/cross products, or projection before substituting.
+               - Ch 8: State chain rule derivation.
+               - Ch 9 & 10: State "equating f dash of x to zero". Strictly use First Derivative Test for maxima/minima. 
+               - Ch 11: NEVER skip "completing the square". NEVER skip defining "t" for substitutions. NEVER skip linear equations for coefficients A and B.
+
+            6. PHONETIC MATH DICTATION (CRITICAL): 
                - Brackets: NEVER say parentheses, curly braces, or square brackets. ALWAYS say "open first bracket" and "close first bracket" for (), "open second bracket" and "close second bracket" for {}, and "open third bracket" and "close third bracket" for [].
                - Single variables/numbers: NEVER say just "a", "e", "0", "2", "x". ALWAYS say "the variable a", "the constant e", "the digit zero", "the number two", "the variable x", "capital C".
-               - Ch 1: Relations & Mappings: Say "union", "intersection", "proper subset", "subset", "null set phi", "element of", "function f from set A to set B".
-               - Ch 2: Inverse Trig: Say "sine inverse of x", "cosine inverse", "tan inverse", "principal value branch", "pi by two", "angle theta".
-               - Ch 3: Continuity & Differentiability: Say "limit as x tends to a", "left hand limit", "right hand limit", "continuous at x equals c".
-               - Ch 4: Differentiations: Say "derivative d y by d x", "second derivative d two y by d x squared", "f dash of x", "f double dash of x".
-               - Ch 5: Determinants & Matrices: Say "Matrix A, row 1 elements are...", "Determinant of A equals", "transpose of A", "A inverse", "identity matrix I", "order two by two", "adjoint of A".
-               - Ch 6: Vectors: Say "vector a", "a cap", "magnitude of vector a", "i cap plus j cap plus k cap", "dot product", "cross product", "direction cosines l, m, and n".
-               - Ch 7: 3-D Geometry: Say "equation of the line", "x minus x one whole divided by a", "shortest distance", "position vector", "cartesian equation".
-               - Ch 8: Rate Measure: Say "rate of change of volume d V by d t", "d A by d t", "with respect to time t", "centimeters per second".
-               - Ch 9: Increasing & Decreasing: Say "strictly increasing", "strictly decreasing", "f dash of x is greater than zero", "open interval a comma b", "critical points".
-               - Ch 10: Maxima & Minima: Say "local maximum", "local minimum", "absolute maximum", "equate f dash of x to zero", "second derivative test".
-               - Ch 11: Indefinite Integrals: Say "integral of... with respect to x", "d x", "plus constant of integration C", "let the variable t equal", "integral of e to the power x", "log mod x".
+               - Ch 1: Say "union", "intersection", "proper subset", "subset", "null set phi", "element of", "function f from set A to set B".
+               - Ch 2: Say "sine inverse of x", "cosine inverse", "tan inverse", "principal value branch", "pi by two", "angle theta".
+               - Ch 3: Say "limit as x tends to a", "left hand limit", "right hand limit", "continuous at x equals c".
+               - Ch 4: Say "derivative d y by d x", "second derivative d two y by d x squared", "f dash of x", "f double dash of x".
+               - Ch 5: Say "Matrix A, row 1 elements are...", "Determinant of A equals", "transpose of A", "A inverse", "identity matrix I", "order two by two", "adjoint of A".
+               - Ch 6: Say "vector a", "a cap", "magnitude of vector a", "i cap plus j cap plus k cap", "dot product", "cross product", "direction cosines l, m, and n".
+               - Ch 7: Say "equation of the line", "x minus x one whole divided by a", "shortest distance", "position vector", "cartesian equation".
+               - Ch 8: Say "rate of change of volume d V by d t", "d A by d t", "with respect to time t", "centimeters per second".
+               - Ch 9: Say "strictly increasing", "strictly decreasing", "f dash of x is greater than zero", "open interval a comma b", "critical points".
+               - Ch 10: Say "local maximum", "local minimum", "absolute maximum", "equate f dash of x to zero", "second derivative test".
+               - Ch 11: Say "integral of... with respect to x", "d x", "plus constant of integration C", "let the variable t equal", "integral of e to the power x", "log mod x".
             Ensure the text is optimized for audio text-to-speech without any visual ambiguity so a student can transcribe it perfectly without looking.`;
-
 
             const requestBody = {
                 contents: [{
