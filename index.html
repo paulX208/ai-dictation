@@ -84,20 +84,21 @@
             const bgAudio = document.getElementById('silentAudio');
 
             if ('mediaSession' in navigator) {
-                // Explicitly tell Android the media is actively playing
                 navigator.mediaSession.playbackState = 'playing';
 
                 navigator.mediaSession.setActionHandler('play', () => {
-                    window.speechSynthesis.resume();
-                    bgAudio.play(); // Wake up the browser's media anchor
+                    bgAudio.play();
                     navigator.mediaSession.playbackState = 'playing';
+                    // Re-speak the current step from the beginning instead of using buggy resume()
+                    speakCurrentChunk(); 
                 });
                 
                 navigator.mediaSession.setActionHandler('pause', () => {
-                    window.speechSynthesis.pause();
-                    bgAudio.pause(); // Sync the dummy audio
-                    clearTimeout(advanceTimer); 
+                    bgAudio.pause();
                     navigator.mediaSession.playbackState = 'paused';
+                    // Instantly kill the speech engine instead of using buggy pause()
+                    window.speechSynthesis.cancel();
+                    clearTimeout(advanceTimer); 
                 });
                 
                 navigator.mediaSession.setActionHandler('nexttrack', () => {
@@ -118,14 +119,14 @@
 
             // BACKUP: If Android bypasses the API and directly pauses the audio element
             bgAudio.addEventListener('pause', () => {
-                window.speechSynthesis.pause();
+                window.speechSynthesis.cancel();
                 clearTimeout(advanceTimer);
                 if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
             });
 
             bgAudio.addEventListener('play', () => {
-                window.speechSynthesis.resume();
                 if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
+                speakCurrentChunk();
             });
         }
 
@@ -159,14 +160,20 @@
         // On-Screen Button Logic
         document.getElementById('playBtn').addEventListener('click', () => {
             const bgAudio = document.getElementById('silentAudio');
-            bgAudio.play(); // Keep the dummy audio in sync
+            bgAudio.play(); 
             if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing';
             
-            if (window.speechSynthesis.paused) {
-                window.speechSynthesis.resume();
-            } else if (!window.speechSynthesis.speaking && answerChunks.length > 0) {
-                speakCurrentChunk(); 
-            }
+            // Restart the current chunk instead of resuming
+            speakCurrentChunk(); 
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            document.getElementById('silentAudio').pause(); 
+            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
+            
+            // Kill the audio instantly
+            window.speechSynthesis.cancel();
+            clearTimeout(advanceTimer); 
         });
 
         document.getElementById('pauseBtn').addEventListener('click', () => {
