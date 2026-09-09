@@ -132,30 +132,43 @@
 
 
 // 3. DICTATION ENGINE WITH AUTO-FLOW & ON-SCREEN CONTROLS
-        function speakCurrentChunk() {
-            window.speechSynthesis.cancel(); 
-            clearTimeout(advanceTimer); 
-            
-            if (answerChunks.length === 0 || currentIndex >= answerChunks.length) return;
-            
-            let text = answerChunks[currentIndex];
-            document.getElementById('outputDisplay').innerText = `Step ${currentIndex + 1}: ${text}`;
-            
-            let utterance = new SpeechSynthesisUtterance(text);
-            if (clearVoice) utterance.voice = clearVoice;
-            utterance.rate = 0.6; // SLOWED DOWN FOR WRITING
-            
-            utterance.onend = () => {
-                advanceTimer = setTimeout(() => {
-                    if (currentIndex < answerChunks.length - 1) {
-                        currentIndex++;
-                        speakCurrentChunk();
-                    }
-                }, 4000); // 4-second gap remains untouched
-            };
-            
-            window.speechSynthesis.speak(utterance);
-        }
+function speakCurrentChunk() {
+    window.speechSynthesis.cancel();
+    clearTimeout(advanceTimer);
+
+    if (answerChunks.length === 0 || currentIndex >= answerChunks.length) return;
+
+    let text = answerChunks[currentIndex];
+    
+    // 100% Foolproof Bracket Translation
+    text = text.replace(/\(/g, " open first bracket ");
+    text = text.replace(/\)/g, " close first bracket ");
+    text = text.replace(/\{/g, " open second bracket ");
+    text = text.replace(/\}/g, " close second bracket ");
+    text = text.replace(/\[/g, " open third bracket ");
+    text = text.replace(/\]/g, " close third bracket ");
+    
+    // Catch any formal words the AI might have stubbornly used
+    text = text.replace(/parentheses/gi, "first brackets");
+    text = text.replace(/curly braces/gi, "second brackets");
+
+    document.getElementById('outputDisplay').innerText = `Step ${currentIndex + 1}: ${text}`;
+
+    let utterance = new SpeechSynthesisUtterance(text);
+    if (clearVoice) utterance.voice = clearVoice;
+    utterance.rate = 0.6; // SLOWED DOWN FOR WRITING
+
+    utterance.onend = () => {
+        advanceTimer = setTimeout(() => {
+            if (currentIndex < answerChunks.length - 1) {
+                currentIndex++;
+                speakCurrentChunk();
+            }
+        }, 4000); // 4-second gap remains untouched
+    };
+
+    window.speechSynthesis.speak(utterance);
+}
 
         // On-Screen Button Logic
         document.getElementById('playBtn').addEventListener('click', () => {
@@ -176,13 +189,6 @@
             clearTimeout(advanceTimer); 
         });
 
-        document.getElementById('pauseBtn').addEventListener('click', () => {
-            document.getElementById('silentAudio').pause(); // Keep the dummy audio in sync
-            if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused';
-            
-            window.speechSynthesis.pause();
-            clearTimeout(advanceTimer); 
-        });
 
         document.getElementById('prevBtn').addEventListener('click', () => {
             clearTimeout(advanceTimer);
