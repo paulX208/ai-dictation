@@ -141,6 +141,11 @@ function speakCurrentChunk() {
     let text = answerChunks[currentIndex];
     
     // 100% Foolproof Bracket Translation
+    text = text.replace(/<=/g, " less than or equal to ");
+    text = text.replace(/>=/g, " greater than or equal to ");
+    text = text.replace(/</g, " less than ");
+    text = text.replace(/>/g, " greater than ");
+ 
     text = text.replace(/\(/g, " open first bracket ");
     text = text.replace(/\)/g, " close first bracket ");
     text = text.replace(/\{/g, " open second bracket ");
