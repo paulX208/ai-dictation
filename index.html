@@ -139,6 +139,19 @@ function speakCurrentChunk() {
     if (answerChunks.length === 0 || currentIndex >= answerChunks.length) return;
 
     let text = answerChunks[currentIndex];
+
+    // FIRST: Fix MCQ options so they drop the brackets and pronounce clearly
+    // This catches "(a)" ONLY at the very start of the sentence
+    text = text.replace(/^\s*\([aA]\)/g, " Option A A A, ");
+    text = text.replace(/^\s*\([bB]\)/g, " Option B B B, ");
+    text = text.replace(/^\s*\([cC]\)/g, " Option C C C, ");
+    text = text.replace(/^\s*\([dD]\)/g, " Option D D D, ");
+
+    // This catches "Option A" anywhere and forces the TTS to loudly spell it out
+    text = text.replace(/option [aA]\b/gi, " Option A A A ");
+    text = text.replace(/option [bB]\b/gi, " Option B B B ");
+    text = text.replace(/option [cC]\b/gi, " Option C C C ");
+    text = text.replace(/option [dD]\b/gi, " Option D D D ");
     
     // 100% Foolproof Bracket Translation
     text = text.replace(/<=/g, " less than or equal to ");
