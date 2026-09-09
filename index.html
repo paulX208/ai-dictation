@@ -267,6 +267,7 @@ function speakCurrentChunk() {
             6. PHONETIC MATH DICTATION (CRITICAL): 
                - Brackets: NEVER say parentheses, curly braces, or square brackets. ALWAYS say "open first bracket" and "close first bracket" for (), "open second bracket" and "close second bracket" for {}, and "open third bracket" and "close third bracket" for [].
                - Single variables/numbers: NEVER say just "a", "e", "0", "2", "x". ALWAYS say "the variable a", "the constant e", "the digit zero", "the number two", "the variable x", "capital C".
+               - Fractions & Exponents: For complex fractions, ALWAYS say "numerator is... denominator is..." or "whole divided by". Say "to the power of".
                - Ch 1: Say "union", "intersection", "proper subset", "subset", "null set phi", "element of", "function f from set A to set B".
                - Ch 2: Say "sine inverse of x", "cosine inverse", "tan inverse", "principal value branch", "pi by two", "angle theta".
                - Ch 3: Say "limit as x tends to a", "left hand limit", "right hand limit", "continuous at x equals c".
@@ -314,12 +315,17 @@ function speakCurrentChunk() {
                         throw new Error(data.error.message);
                     }
                     
-                    let rawText = data.candidates[0].content.parts[0].text;
-                    rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    
-                    answerChunks = JSON.parse(rawText);
-                    currentIndex = 0;
-                    success = true; 
+        let rawText = data.candidates[0].content.parts[0].text;
+        
+        // Extract ONLY the array, ignoring any extra conversational text
+        const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) {
+            throw new Error("AI failed to return a JSON array.");
+        }
+        
+        answerChunks = JSON.parse(jsonMatch[0]);
+        currentIndex = 0;
+        success = true;
                     
                     speakCurrentChunk();
                     document.getElementById('mediaPlayer').style.display = 'block'; 
@@ -334,6 +340,46 @@ function speakCurrentChunk() {
                 }
             }
         });
+
+// 5. WAKE-LOCK AND STEALTH MODE
+    let wakeLock = null;
+    
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        } catch (err) {
+            console.error("Wake Lock failed:", err);
+        }
+    }
+
+    // Re-request wake lock if tab visibility changes
+    document.addEventListener('visibilitychange', () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    });
+
+    // Trigger wake lock when the system initializes
+    document.getElementById('initBtn').addEventListener('click', () => {
+        requestWakeLock();
+    });
+
+    // Double-tap the screen to activate/deactivate Pitch Black Stealth Mode
+    document.body.addEventListener('dblclick', (e) => {
+        // Prevent triggering if tapping a button
+        if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+        
+        if (document.body.style.backgroundColor === 'black') {
+            document.body.style.backgroundColor = '#1e1e1e';
+            document.body.style.opacity = '1';
+        } else {
+            document.body.style.backgroundColor = 'black';
+            document.body.style.opacity = '0.02'; // Dim enough to look off, but active enough to double-tap back
+        }
+    });
+
     </script>
 </body>
 </html>
