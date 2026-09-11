@@ -146,6 +146,13 @@ function speakCurrentChunk() {
     text = text.replace(/^\s*\([bB]\)/g, " Option B B B, ");
     text = text.replace(/^\s*\([cC]\)/g, " Option C C C, ");
     text = text.replace(/^\s*\([dD]\)/g, " Option D D D, ");
+    
+    // CHEMISTRY SYMBOL TRANSLATION
+    text = text.replace(/->/g, " gives ");
+    text = text.replace(/⇌/g, " is in equilibrium with ");
+    text = text.replace(/E°/g, " E naught ");
+    text = text.replace(/Δ/g, " delta ");
+    text = text.replace(/°C/g, " degrees Celsius ");
 
     // This catches "Option A" anywhere and forces the TTS to loudly spell it out
     text = text.replace(/option [aA]\b/gi, " Option A A A ");
@@ -251,49 +258,43 @@ function speakCurrentChunk() {
             // Wait for all images to process
             const imageParts = await Promise.all(readPromises);
 
-            const prompt = `You are a dictation assistant for high school STEM. Solve the problems across all the provided question paper pages in order. 
-            CRITICAL INSTRUCTIONS: 
-            1. Output ONLY a raw JSON array of strings. No markdown, no formatting.
-            2. Break the solution into extremely short, logical steps (under 15 words each).
-            
-            3. QUESTION TYPE ROUTING (CRITICAL):
-               - IF MCQ (Multiple Choice): Output exactly ONE step containing ONLY the correct option letter and its final value. Skip all working.
-               - IF SUBJECTIVE: Provide a full, rigorous step-by-step solution.
-            
-            4. STRICT CBSE NCERT FORMAT: Structure every solution exactly according to the Class 12 board step-marking scheme:
-               - First step: Always begin with "Given that..."
-               - Second step: Explicitly dictate the formula, property, or theorem being used before substituting values.
-               - Middle steps: Show step-by-step substitution and evaluation. Do not skip intermediate calculation steps.
-               - Final step: Conclude with the final answer and units, or explicitly state "hence proved".
-               - Anti-Compression: NEVER perform mental math. If an intermediate variable, scalar, or constant must be found to solve the problem, explicitly dictate the equation used to find it.
-               
-            5. CHAPTER-SPECIFIC NON-SKIP RULES:
-               - Ch 1: State definitions for reflexivity, symmetry, transitivity, one-one, or onto before testing.
-               - Ch 2: State principal value branch and domain.
-               - Ch 3: Evaluate LHL, RHL, and f(a) in separate steps.
-               - Ch 4: State "taking log on both sides". Do not skip chain rule expansions.
-               - Ch 5: State every row/column operation. State cofactor matrix before finding adjoint.
-               - Ch 6 & 7: Dictate formula for shortest distance, dot/cross products, or projection before substituting. NEVER skip introducing a scalar constant lambda when converting direction ratios to a vector. Explicitly solve for lambda step-by-step using given conditions (like dot products) before writing the final vector. Dictate formulas for shortest distance, dot/cross products, or projection before substituting.
-               - Ch 8: State chain rule derivation.
-               - Ch 9 & 10: State "equating f dash of x to zero". Strictly use First Derivative Test for maxima/minima. 
-               - Ch 11: NEVER skip "completing the square". NEVER skip defining "t" for substitutions. NEVER skip linear equations for coefficients A and B.
+            const prompt = `You are a dictation assistant for high school STEM. Solve the problems across all the provided question paper pages in order.
+CRITICAL INSTRUCTIONS:
+1. Output ONLY a raw JSON array of strings. No markdown, no formatting.
+2. Break the solution into extremely short, logical steps (under 15 words each).
 
-            6. PHONETIC MATH DICTATION (CRITICAL): 
-               - Brackets: NEVER say parentheses, curly braces, or square brackets. ALWAYS say "open first bracket" and "close first bracket" for (), "open second bracket" and "close second bracket" for {}, and "open third bracket" and "close third bracket" for [].
-               - Single variables/numbers: NEVER say just "a", "e", "0", "2", "x". ALWAYS say "the variable a", "the constant e", "the digit zero", "the number two", "the variable x", "capital C".
-               - Fractions & Exponents: For complex fractions, ALWAYS say "numerator is... denominator is..." or "whole divided by". Say "to the power of".
-               - Ch 1: Say "union", "intersection", "proper subset", "subset", "null set phi", "element of", "function f from set A to set B".
-               - Ch 2: Say "sine inverse of x", "cosine inverse", "tan inverse", "principal value branch", "pi by two", "angle theta".
-               - Ch 3: Say "limit as x tends to a", "left hand limit", "right hand limit", "continuous at x equals c".
-               - Ch 4: Say "derivative d y by d x", "second derivative d two y by d x squared", "f dash of x", "f double dash of x".
-               - Ch 5: Say "Matrix A, row 1 elements are...", "Determinant of A equals", "transpose of A", "A inverse", "identity matrix I", "order two by two", "adjoint of A".
-               - Ch 6: Say "vector a", "a cap", "magnitude of vector a", "i cap plus j cap plus k cap", "dot product", "cross product", "direction cosines l, m, and n".
-               - Ch 7: Say "equation of the line", "x minus x one whole divided by a", "shortest distance", "position vector", "cartesian equation".
-               - Ch 8: Say "rate of change of volume d V by d t", "d A by d t", "with respect to time t", "centimeters per second".
-               - Ch 9: Say "strictly increasing", "strictly decreasing", "f dash of x is greater than zero", "open interval a comma b", "critical points".
-               - Ch 10: Say "local maximum", "local minimum", "absolute maximum", "equate f dash of x to zero", "second derivative test".
-               - Ch 11: Say "integral of... with respect to x", "d x", "plus constant of integration C", "let the variable t equal", "integral of e to the power x", "log mod x".
-            Ensure the text is optimized for audio text-to-speech without any visual ambiguity so a student can transcribe it perfectly without looking.`;
+3. QUESTION TYPE ROUTING (CRITICAL):
+   - IF MCQ (Multiple Choice): Output exactly ONE step containing ONLY the correct option letter and its final value. Skip all working.
+   - IF SUBJECTIVE: Provide a full, rigorous step-by-step solution.
+
+4. STRICT CBSE NCERT FORMAT: Structure every solution exactly according to the Class 12 board step-marking scheme:
+   - First step: Always begin with "Given that..." listing all quantities, concentrations, or given starting materials.
+   - Second step: Explicitly dictate the law, formula, or reaction equation being used before substituting values.
+   - Middle steps: Show step-by-step substitution, molar mass evaluation, and intermediate conversions. Do not skip intermediate calculation steps.
+   - Final step: Conclude with the final numerical value and exact units, or the IUPAC name and structure description.
+   - Anti-Compression: NEVER perform mental math. If an intermediate variable, molar mass, standard potential, or intermediate reaction product is required, explicitly dictate the separate step to calculate or identify it.
+
+5. CHAPTER-SPECIFIC NON-SKIP RULES:
+   - Ch 1 Solutions: State Raoult's Law or Henry's Law formula before calculating. Explicitly show the separate calculation of solute molar mass M two. For colligative properties, always show the formula with the van't Hoff factor i before substituting.
+   - Ch 2 Electrochemistry: Explicitly dictate the half-cell reactions and the balanced overall cell reaction. Dictate the standard Nernst equation formula before substituting concentrations and the value of n (number of electrons transferred). For conductivity, explicitly show the cell constant formula before calculating molar conductivity.
+   - Ch 3 d- and f-Block Elements: Explicitly state the ground state and ionic electronic configurations (e.g., argon core three d five) before explaining anomalous properties, colored ions, oxidation states, or catalytic behavior. Explicitly dictate the spin-only magnetic moment formula mu equals square root of n times n plus two Bohr Magneton.
+   - Ch 4 Haloalkanes and Haloarenes: Explicitly state whether the mechanism is S N one or S N two, mentioning carbocation stability or steric hindrance. For conversions, dictate every intermediate product (e.g., converting to haloalkane first before substitution). Never skip inorganic reagents or reaction conditions.
+   - Ch 5 Alcohols, Phenols and Ethers: Explicitly state the acid catalyst or temperature in dehydration reactions (e.g., 443 Kelvin for alkene vs 413 Kelvin for ether). For Kolbe's or Reimer-Tiemann reactions, dictate the intermediate sodium phenoxide or intermediate aldehyde step. For Williamson synthesis, identify the specific alkyl halide and alkoxide used.
+   - Ch 6 Aldehydes, Ketones and Carboxylic Acids: Explicitly state the chemical test name (Tollens' test, Fehling's test, or Iodoform test) along with observation (e.g., silver mirror, red precipitate, yellow precipitate). For nucleophilic addition, Aldol condensation, or Cannizzaro reaction, show the intermediate adduct or carbanion step before the dehydrated or final product.
+
+6. PHONETIC CHEMISTRY DICTATION (CRITICAL):
+   - Brackets: NEVER say parentheses, curly braces, or square brackets. ALWAYS say "open first bracket" and "close first bracket" for (), "open second bracket" and "close second bracket" for {}, and "open third bracket" and "close third bracket" for [].
+   - Letters & Numbers: ALWAYS say "capital M", "small m", "capital K", "digit zero", "the number two". NEVER let single letters sound ambiguous.
+   - Fractions & Exponents: ALWAYS say "numerator is... denominator is..." or "whole divided by". Say "to the power of", "ten to the power minus three".
+   - Chemical Formulas: Phonetically spell formulas out letter by letter and digit by digit. Say "C two H five O H", "C H three C H O", "H two S O four", "K M n O four", "K two C r two O seven".
+   - Ions & Signs: Say "C u two plus", "F e three plus", "C l minus", "gives", "is in equilibrium with".
+   - Ch 1 Solutions: Say "mole fraction x", "mass percentage", "parts per million", "molarity capital M", "molality small m", "cryoscopic constant K f", "ebullioscopic constant K b", "osmotic pressure pi", "van 't Hoff factor i".
+   - Ch 2 Electrochemistry: Say "E naught cell", "standard reduction potential", "standard hydrogen electrode S H E", "Nernst equation", "limiting molar conductivity lambda naught m", "Faraday constant capital F", "cell constant G star", "Siemens per centimeter".
+   - Ch 3 d- and f-Block: Say "argon core", "transition elements", "variable oxidation states", "unpaired electrons", "Bohr Magneton", "lanthanoid contraction", "potassium permanganate", "potassium dichromate", "interstitial compounds".
+   - Ch 4 Haloalkanes & Haloarenes: Say "nucleophilic substitution", "S N one mechanism", "S N two mechanism", "retention of configuration", "inversion of configuration", "racemic mixture", "Markovnikov's rule", "anti-Markovnikov addition", "Grignard reagent", "Wurtz-Fittig reaction".
+   - Ch 5 Alcohols, Phenols & Ethers: Say "Lucas reagent", "primary alcohol", "secondary alcohol", "tertiary alcohol", "dehydration", "phenol", "Reimer-Tiemann reaction", "Kolbe's reaction", "Williamson ether synthesis", "electrophilic aromatic substitution".
+   - Ch 6 Aldehydes, Ketones & Carboxylic Acids: Say "carbonyl carbon", "nucleophilic addition", "Tollens' reagent silver mirror test", "Fehling's solution", "Iodoform test", "Aldol condensation", "Cross Aldol condensation", "Cannizzaro reaction", "Clemmensen reduction", "Wolff-Kishner reduction", "decarboxylation".
+Ensure the text is optimized for audio text-to-speech without any visual ambiguity so a student can transcribe it perfectly without looking.`;
 
             const requestBody = {
                 contents: [{
