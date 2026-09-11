@@ -20,6 +20,10 @@
     <button id="resetBtn" style="background: #dc3545; margin-bottom: 20px;">Reset API Key</button>
     
     <!-- Step 2: Camera/Gallery Input -->
+    <div style="margin-bottom: 15px;">
+            <label for="targetQuestion" style="color: #666; font-family: sans-serif; font-size: 14px;">Enter Question Number (Optional): </label>
+            <input type="number" id="targetQuestion" placeholder="e.g. 12" style="background: black; color: white; border: 1px solid #333; padding: 5px; border-radius: 4px; width: 60px; outline: none;">
+        </div>
     <input type="file" id="imageInput" accept="image/*" multiple>
     
     <div id="outputDisplay">Waiting for image...</div>
@@ -140,12 +144,22 @@ function speakCurrentChunk() {
 
     let text = answerChunks[currentIndex];
 
+    // CLEAN UP QUESTION NUMBERS FOR FAST DICTATION
+    text = text.replace(/Q\.\s*([0-9]+)/gi, "Q $1 ");
+    text = text.replace(/Question\s*([0-9]+)/gi, "Q $1 ");
+
     // FIRST: Fix MCQ options so they drop the brackets and pronounce clearly
     // This catches "(a)" ONLY at the very start of the sentence
     text = text.replace(/^\s*\([aA]\)/g, " Option A A A, ");
     text = text.replace(/^\s*\([bB]\)/g, " Option B B B, ");
     text = text.replace(/^\s*\([cC]\)/g, " Option C C C, ");
     text = text.replace(/^\s*\([dD]\)/g, " Option D D D, ");
+
+    // This catches "Option A" anywhere and forces the TTS to loudly spell it out
+    text = text.replace(/option [aA]\b/gi, " Option A A A ");
+    text = text.replace(/option [bB]\b/gi, " Option B B B ");
+    text = text.replace(/option [cC]\b/gi, " Option C C C ");
+    text = text.replace(/option [dD]\b/gi, " Option D D D ");
     
     // CHEMISTRY SYMBOL TRANSLATION
     text = text.replace(/->/g, " gives ");
@@ -154,11 +168,25 @@ function speakCurrentChunk() {
     text = text.replace(/Δ/g, " delta ");
     text = text.replace(/°C/g, " degrees Celsius ");
 
-    // This catches "Option A" anywhere and forces the TTS to loudly spell it out
-    text = text.replace(/option [aA]\b/gi, " Option A A A ");
-    text = text.replace(/option [bB]\b/gi, " Option B B B ");
-    text = text.replace(/option [cC]\b/gi, " Option C C C ");
-    text = text.replace(/option [dD]\b/gi, " Option D D D ");
+    // FORCE SPACING IN CHEMICAL FORMULAS SO TTS READS EVERY LETTER
+    text = text.replace(/([A-Z])(?=[A-Z])/g, "$1 "); // Converts HCHO to H C H O
+    text = text.replace(/([a-z])(?=[A-Z])/g, "$1 "); // Converts NaCl to Na Cl
+    text = text.replace(/([a-zA-Z])(?=[0-9])/g, "$1 "); // Converts CH4 to C H 4
+    text = text.replace(/([0-9])(?=[a-zA-Z])/g, "$1 "); // Converts 2O to 2 O
+
+    // FIX EXPONENTS AND INVERSES
+    text = text.replace(/\^-\s*1/g, " inverse ");
+    text = text.replace(/\^-\s*2/g, " to the power of minus two ");
+    text = text.replace(/\^\s*2/g, " squared ");
+    text = text.replace(/\^\s*3/g, " cubed ");
+
+    // FIX SILENT HYPHENS IN ALGEBRA AND ELECTRONIC CONFIGURATIONS (e.g., n-1)
+    text = text.replace(/([a-zA-Z0-9])\s*-\s*([0-9])/g, "$1 minus $2 ");
+    
+    // Catch flat text inverses (if AI forgets the ^ symbol)
+    text = text.replace(/mol-1/gi, " mole inverse ");
+    text = text.replace(/s-1/gi, " second inverse ");
+    text = text.replace(/L-1/gi, " liter inverse ");
     
     // 100% Foolproof Bracket Translation
     text = text.replace(/<=/g, " less than or equal to ");
@@ -258,29 +286,28 @@ function speakCurrentChunk() {
             // Wait for all images to process
             const imageParts = await Promise.all(readPromises);
 
-            const prompt = `You are a dictation assistant for high school STEM. Solve the problems across all the provided question paper pages in order.
+const prompt = `You are a dictation assistant for high school STEM. Solve the problems across all the provided question paper pages in order.
 CRITICAL INSTRUCTIONS:
 1. Output ONLY a raw JSON array of strings. No markdown, no formatting.
 2. Break the solution into extremely short, logical steps (under 15 words each).
 
 3. QUESTION TYPE ROUTING (CRITICAL):
-   - IF MCQ (Multiple Choice): Output exactly ONE step containing ONLY the correct option letter and its final value. Skip all working.
-   - IF SUBJECTIVE: Provide a full, rigorous step-by-step solution.
+   - IF MCQ: Output exactly ONE step containing ONLY the correct option letter and its final value. Start with "Q. [Number] Option...".
+   - IF NUMERICAL (Physical Chemistry calculations): Start step 1 explicitly with "Q. [Number] Given that..." listing all quantities. Dictate formulas, substitutions, and exact units.
+   - IF THEORETICAL (Organic conversions, Inorganic reasoning, IUPAC naming): Start step 1 explicitly with "Q. [Number]" and jump DIRECTLY into the starting reactant, principle, or electronic configuration. NEVER use the word "Given" for theoretical questions.
 
 4. STRICT CBSE NCERT FORMAT: Structure every solution exactly according to the Class 12 board step-marking scheme:
-   - First step: Always begin with "Given that..." listing all quantities, concentrations, or given starting materials.
-   - Second step: Explicitly dictate the law, formula, or reaction equation being used before substituting values.
-   - Middle steps: Show step-by-step substitution, molar mass evaluation, and intermediate conversions. Do not skip intermediate calculation steps.
-   - Final step: Conclude with the final numerical value and exact units, or the IUPAC name and structure description.
+   - Numerical Middle steps: Show step-by-step substitution, molar mass evaluation, and intermediate conversions. Do not skip intermediate calculation steps.
+   - Theoretical Middle steps: For conversions, dictate every intermediate product. Never skip reagents or reaction conditions.
    - Anti-Compression: NEVER perform mental math. If an intermediate variable, molar mass, standard potential, or intermediate reaction product is required, explicitly dictate the separate step to calculate or identify it.
 
 5. CHAPTER-SPECIFIC NON-SKIP RULES:
-   - Ch 1 Solutions: State Raoult's Law or Henry's Law formula before calculating. Explicitly show the separate calculation of solute molar mass M two. For colligative properties, always show the formula with the van't Hoff factor i before substituting.
-   - Ch 2 Electrochemistry: Explicitly dictate the half-cell reactions and the balanced overall cell reaction. Dictate the standard Nernst equation formula before substituting concentrations and the value of n (number of electrons transferred). For conductivity, explicitly show the cell constant formula before calculating molar conductivity.
+   - Ch 1 Solutions: State Raoult's Law or Henry's Law formula before calculating. Explicitly show the separate calculation of solute molar mass M two. For colligative properties, always show the formula with the van 't Hoff factor i before substituting.
+   - Ch 2 Electrochemistry: Explicitly dictate the half-cell reactions and the balanced overall cell reaction. Dictate the standard Nernst equation formula before substituting concentrations and the value of n. For conductivity, explicitly show the cell constant formula before calculating molar conductivity.
    - Ch 3 d- and f-Block Elements: Explicitly state the ground state and ionic electronic configurations (e.g., argon core three d five) before explaining anomalous properties, colored ions, oxidation states, or catalytic behavior. Explicitly dictate the spin-only magnetic moment formula mu equals square root of n times n plus two Bohr Magneton.
-   - Ch 4 Haloalkanes and Haloarenes: Explicitly state whether the mechanism is S N one or S N two, mentioning carbocation stability or steric hindrance. For conversions, dictate every intermediate product (e.g., converting to haloalkane first before substitution). Never skip inorganic reagents or reaction conditions.
-   - Ch 5 Alcohols, Phenols and Ethers: Explicitly state the acid catalyst or temperature in dehydration reactions (e.g., 443 Kelvin for alkene vs 413 Kelvin for ether). For Kolbe's or Reimer-Tiemann reactions, dictate the intermediate sodium phenoxide or intermediate aldehyde step. For Williamson synthesis, identify the specific alkyl halide and alkoxide used.
-   - Ch 6 Aldehydes, Ketones and Carboxylic Acids: Explicitly state the chemical test name (Tollens' test, Fehling's test, or Iodoform test) along with observation (e.g., silver mirror, red precipitate, yellow precipitate). For nucleophilic addition, Aldol condensation, or Cannizzaro reaction, show the intermediate adduct or carbanion step before the dehydrated or final product.
+   - Ch 4 Haloalkanes and Haloarenes: Explicitly state whether the mechanism is S N one or S N two, mentioning carbocation stability or steric hindrance. For conversions, dictate every intermediate product.
+   - Ch 5 Alcohols, Phenols and Ethers: Explicitly state the acid catalyst or temperature in dehydration reactions. For Kolbe's or Reimer-Tiemann, dictate the intermediate sodium phenoxide or intermediate aldehyde step. For Williamson synthesis, identify the specific alkyl halide and alkoxide used.
+   - Ch 6 Aldehydes, Ketones and Carboxylic Acids: Explicitly state the chemical test name along with observation (e.g., silver mirror, red precipitate, yellow precipitate). For nucleophilic addition, Aldol condensation, or Cannizzaro reaction, show the intermediate adduct or carbanion step before the dehydrated or final product.
 
 6. PHONETIC CHEMISTRY DICTATION (CRITICAL):
    - Brackets: NEVER say parentheses, curly braces, or square brackets. ALWAYS say "open first bracket" and "close first bracket" for (), "open second bracket" and "close second bracket" for {}, and "open third bracket" and "close third bracket" for [].
@@ -296,10 +323,16 @@ CRITICAL INSTRUCTIONS:
    - Ch 6 Aldehydes, Ketones & Carboxylic Acids: Say "carbonyl carbon", "nucleophilic addition", "Tollens' reagent silver mirror test", "Fehling's solution", "Iodoform test", "Aldol condensation", "Cross Aldol condensation", "Cannizzaro reaction", "Clemmensen reduction", "Wolff-Kishner reduction", "decarboxylation".
 Ensure the text is optimized for audio text-to-speech without any visual ambiguity so a student can transcribe it perfectly without looking.`;
 
+            let currentPrompt = prompt;
+        const targetQ = document.getElementById('targetQuestion').value.trim();
+        
+        if (targetQ !== "") {
+            currentPrompt += `\n\nCRITICAL OVERRIDE: The user has explicitly requested ONLY Question ${targetQ}. You MUST IGNORE all other questions on the provided pages. Output the solution ONLY for Question ${targetQ}.`;
+        }
             const requestBody = {
                 contents: [{
                     parts: [
-                        { text: prompt },
+                        { text: currentprompt },
                         ...imageParts // This adds all your images into the API request
                     ]
                 }]
